@@ -74,6 +74,12 @@ func postTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// проверка наличия задачи по id
+	if task.ID == "" {
+		http.Error(w, "Такой задачи нет", http.StatusBadRequest)
+		return
+	}
+
 	tasks[task.ID] = task
 
 	w.Header().Set("Content-Type", "application/json")
@@ -85,12 +91,12 @@ func getTask(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id") // извлечение id.
 	if task, exists := tasks[id]; exists {
 		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		// w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(task)
-	} else {
-		http.Error(w, "Задачи с таким id нет!", http.StatusBadRequest)
-	}
+	} //else {
+	//http.Error(w, "Задачи с таким id нет!", http.StatusBadRequest)
+	//}
 }
 
 // Обработчик удаления задач по заданному id.
@@ -105,7 +111,7 @@ func deleteTask(w http.ResponseWriter, r *http.Request) {
 	delete(tasks, id) // удаляем задачу по id.
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"сообщение": "Задача удалена"}) // Возвращаем ответ в формате JSON
+	// json.NewEncoder(w).Encode(map[string]string{"сообщение": "Задача удалена"}) // Возвращаем ответ в формате JSON
 }
 
 func main() {
