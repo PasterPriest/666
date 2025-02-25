@@ -47,7 +47,7 @@ var tasks = map[string]Task{
 func getTasks(w http.ResponseWriter, r *http.Request) {
 
 	// устанавливаем заголовок типа содержимого.
-	w.Header().Set("Content-Type", "applicatoin/json")
+	w.Header().Set("Content-Type", "application/json")
 
 	// сериализируем данные в json.
 	jsonTasks, err := json.Marshal(tasks)
@@ -76,7 +76,13 @@ func postTask(w http.ResponseWriter, r *http.Request) {
 
 	// проверка наличия задачи по id
 	if task.ID == "" {
-		http.Error(w, "Такой задачи нет", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Проверка на существование задачи с таким же ID
+	if _, exists := tasks[task.ID]; exists {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -88,15 +94,23 @@ func postTask(w http.ResponseWriter, r *http.Request) {
 
 // Обработчик задач по заданному ID.
 func getTask(w http.ResponseWriter, r *http.Request) {
+
 	id := chi.URLParam(r, "id") // извлечение id.
-	if task, exists := tasks[id]; exists {
-		w.Header().Set("Content-Type", "application/json")
-		// w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(task)
-	} //else {
-	//http.Error(w, "Задачи с таким id нет!", http.StatusBadRequest)
-	//}
+	w.Header().Set("Content-Type", "application/json")
+
+	task, exists := tasks[id]
+	if !exists {
+		http.Error(w, "Задачи с таким id нет!", http.StatusBadRequest)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(task); err != nil {
+		http.Error(w, "Ошибка при кодировании задачи", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+
 }
 
 // Обработчик удаления задач по заданному id.
@@ -111,7 +125,7 @@ func deleteTask(w http.ResponseWriter, r *http.Request) {
 	delete(tasks, id) // удаляем задачу по id.
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	// json.NewEncoder(w).Encode(map[string]string{"сообщение": "Задача удалена"}) // Возвращаем ответ в формате JSON
+
 }
 
 func main() {
@@ -122,7 +136,7 @@ func main() {
 	r.Get("/tasks", getTasks)
 	r.Post("/tasks", postTask)
 	r.Get("/tasks/{id}", getTask)
-	r.Delete("/tasts/{id}", deleteTask)
+	r.Delete("/tasks/{id}", deleteTask)
 
 	if err := http.ListenAndServe(":8080", r); err != nil {
 		fmt.Printf("Ошибка при запуске сервера: %s", err.Error())
